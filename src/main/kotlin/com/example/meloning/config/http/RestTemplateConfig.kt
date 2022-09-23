@@ -22,7 +22,6 @@ class RestTemplateConfig {
 //            .requestFactory { BufferingClientHttpRequestFactory(HttpComponentsClientHttpRequestFactory()) }
             .requestFactory { BufferingClientHttpRequestFactory(SimpleClientHttpRequestFactory()) }
             .errorHandler(RestTemplateErrorHandler())
-            .messageConverters(KotlinSerializationJsonHttpMessageConverter())
             .setConnectTimeout(Duration.ofMinutes(1))
             .additionalInterceptors(RestTemplateClientHttpRequestInterceptor())
             .build()
