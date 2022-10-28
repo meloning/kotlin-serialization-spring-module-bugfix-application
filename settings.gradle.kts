@@ -1,1 +1,1 @@
-rootProject.name = "kotlin-serialization-rest-template-example"
+rootProject.name = "kotlin-serialization-spring-module-bugfix-application"
