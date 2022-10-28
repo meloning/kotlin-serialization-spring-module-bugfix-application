@@ -1,6 +1,6 @@
-# kotlin-serialization-rest-template-bugfix-repo
+# kotlin-serialization-spring-module-bugfix-repo
 
-This repository was created for testing purposes to fix restTemplate and Kotlinx.serialization bugs.
+This repository was created for testing purposes to fix spring-module library and Kotlinx.serialization bugs.
 
 ## Issue
 
