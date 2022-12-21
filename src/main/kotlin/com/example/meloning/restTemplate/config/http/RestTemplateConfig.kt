@@ -18,7 +18,7 @@ class RestTemplateConfig {
             // -> HttpComponentsClientHttpRequestFactory()
             // required: implementation('org.apache.httpcomponents:httpclient')
 //            .requestFactory { BufferingClientHttpRequestFactory(HttpComponentsClientHttpRequestFactory()) }
-            .requestFactory { BufferingClientHttpRequestFactory(SimpleClientHttpRequestFactory()) }
+//                .requestFactory(BufferingClientHttpRequestFactory(SimpleClientHttpRequestFactory()))
             .errorHandler(RestTemplateErrorHandler())
             .setConnectTimeout(Duration.ofMinutes(1))
             .additionalInterceptors(RestTemplateClientHttpRequestInterceptor())
