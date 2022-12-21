@@ -1,12 +1,10 @@
-package com.example.meloning.config.http
+package com.example.meloning.restTemplate.config.http
 
 import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.client.BufferingClientHttpRequestFactory
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
 import org.springframework.http.client.SimpleClientHttpRequestFactory
-import org.springframework.http.converter.json.KotlinSerializationJsonHttpMessageConverter
 import org.springframework.web.client.RestTemplate
 import java.time.Duration
 

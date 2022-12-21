@@ -1,6 +1,6 @@
-package com.example.meloning.controller
+package com.example.meloning.restTemplate.controller
 
-import com.example.meloning.service.GithubService
+import com.example.meloning.restTemplate.service.GithubService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable

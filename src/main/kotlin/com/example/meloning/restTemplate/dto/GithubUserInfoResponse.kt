@@ -1,4 +1,4 @@
-package com.example.meloning.dto
+package com.example.meloning.restTemplate.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

@@ -1,4 +1,4 @@
-package com.example.meloning.config.http
+package com.example.meloning.restTemplate.config.http
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

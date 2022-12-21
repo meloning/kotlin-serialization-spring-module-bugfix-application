@@ -1,6 +1,6 @@
-package com.example.meloning.service
+package com.example.meloning.restTemplate.service
 
-import com.example.meloning.dto.GithubUserInfoResponse
+import com.example.meloning.restTemplate.dto.GithubUserInfoResponse
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders

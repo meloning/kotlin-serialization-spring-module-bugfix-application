@@ -1,4 +1,4 @@
-package com.example.meloning.config.http
+package com.example.meloning.restTemplate.config.http
 
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpRequest
