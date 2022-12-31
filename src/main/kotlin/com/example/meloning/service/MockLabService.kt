@@ -2,8 +2,6 @@ package com.example.meloning.service
 
 import com.example.meloning.dto.MockLabCreateTesterDto
 import com.example.meloning.dto.MockLabRequestDto
-import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -35,7 +33,6 @@ class MockLabService(
             body,
             httpHeaders
         )
-        Int.serializer()
 
         val result = restTemplate.exchange(
             "$MOCKLAB_TEST_URL/json-test",
