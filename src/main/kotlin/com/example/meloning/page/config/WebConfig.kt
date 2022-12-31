@@ -1,11 +1,10 @@
 package com.example.meloning.page.config
 
-import com.example.meloning.page.util.PageSerializer
+import com.example.meloning.page.util.DomainSerializerFactory
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.descriptors.PolymorphicKind.OPEN
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.json.Json
@@ -13,7 +12,6 @@ import kotlinx.serialization.serializerOrNull
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.GenericTypeResolver
 import org.springframework.core.ResolvableType
-import org.springframework.data.domain.Page
 import org.springframework.http.HttpInputMessage
 import org.springframework.http.HttpOutputMessage
 import org.springframework.http.MediaType
@@ -22,7 +20,6 @@ import org.springframework.http.converter.HttpMessageConverter
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.http.converter.HttpMessageNotWritableException
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
-import org.springframework.lang.Nullable
 import org.springframework.util.ConcurrentReferenceHashMap
 import org.springframework.util.StreamUtils
 import org.springframework.web.servlet.config.annotation.EnableWebMvc
@@ -53,7 +50,7 @@ class WebConfig : WebMvcConfigurer {
         }
 
         override fun canRead(type: Type, contextClass: Class<*>?, mediaType: MediaType?): Boolean {
-            return if (serializer(getGenericType(type, contextClass)) != null) {
+            return if (serializer(GenericTypeResolver.resolveType(type, contextClass)) != null) {
                 canRead(mediaType)
             } else {
                 false
@@ -61,7 +58,7 @@ class WebConfig : WebMvcConfigurer {
         }
 
         override fun canWrite(type: Type?, clazz: Class<*>, mediaType: MediaType?): Boolean {
-            return if (serializer(if (type != null) getGenericType(type, clazz) else clazz) != null) {
+            return if (serializer(if (type != null) GenericTypeResolver.resolveType(type, clazz) else clazz) != null) {
                 canWrite(mediaType)
             } else {
                 false
@@ -70,7 +67,7 @@ class WebConfig : WebMvcConfigurer {
 
         @Throws(IOException::class, HttpMessageNotReadableException::class)
         override fun read(type: Type, contextClass: Class<*>?, inputMessage: HttpInputMessage): Any {
-            val resolvedType = getGenericType(type, contextClass)
+            val resolvedType = GenericTypeResolver.resolveType(type, contextClass)
             val serializer = serializer(resolvedType)
                     ?: throw HttpMessageNotReadableException("Could not find KSerializer for $resolvedType", inputMessage)
             return readInternal(serializer, format, inputMessage)
@@ -112,24 +109,11 @@ class WebConfig : WebMvcConfigurer {
          * @param type the type to find a serializer for
          * @return a resolved serializer for the given type, or `null`
          */
-        @Nullable
         private fun serializer(type: Type): KSerializer<Any>? {
             var serializer = serializerCache[type]
             if (serializer == null) {
                 try {
-                    serializer = if (type is ParameterizedType) {
-                        val rootClass = (type.rawType as Class<*>)
-                        val args = (type.actualTypeArguments)
-                        val argsSerializers = args.map { serializerOrNull(it) }
-                        if (argsSerializers.isEmpty() && argsSerializers.first() == null) null
-                        when {
-                            Page::class.java.isAssignableFrom(rootClass) ->
-                                PageSerializer(ListSerializer(argsSerializers.first()!!.nullable)) as KSerializer<Any>?
-                            else -> null
-                        }
-                    } else {
-                        serializerOrNull(type)
-                    }
+                    serializer = serializerInternal(type)
                 } catch (ignored: IllegalArgumentException) {
                 }
                 if (serializer != null) {
@@ -141,6 +125,9 @@ class WebConfig : WebMvcConfigurer {
             }
             return serializer
         }
+
+        @Throws(IllegalArgumentException::class)
+        protected abstract fun serializerInternal(type: Type): KSerializer<Any>?
 
         private fun hasPolymorphism(descriptor: SerialDescriptor, alreadyProcessed: MutableSet<String>): Boolean {
             alreadyProcessed.add(descriptor.serialName)
@@ -154,16 +141,6 @@ class WebConfig : WebMvcConfigurer {
                 }
             }
             return false
-        }
-
-        private fun getGenericType(targetType: Type, contextClass: Class<*>?): Type {
-            val resolvedType = checkAndGetGenericType(targetType)
-            return GenericTypeResolver.resolveType(resolvedType, contextClass)
-        }
-
-        private fun checkAndGetGenericType(targetType: Type): Type {
-            val resolvableType = ResolvableType.forType(targetType)
-            return if (resolvableType.hasGenerics()) resolvableType.getGeneric().type else targetType
         }
 
         companion object {
@@ -196,6 +173,20 @@ class WebConfig : WebMvcConfigurer {
                 outputMessage.body.flush()
             } catch (ex: SerializationException) {
                 throw HttpMessageNotWritableException("Could not write " + format + ": " + ex.message, ex)
+            }
+        }
+
+        @OptIn(ExperimentalSerializationApi::class)
+        override fun serializerInternal(type: Type): KSerializer<Any>? {
+            return when(type) {
+                is ParameterizedType -> {
+                    val rootClass = (type.rawType as Class<*>)
+                    val args = (type.actualTypeArguments)
+                    val argsSerializers = args.map { serializerOrNull(it) }
+                    if (argsSerializers.isEmpty() && argsSerializers.first() == null) null
+                    DomainSerializerFactory.create(rootClass, argsSerializers)
+                }
+                else -> serializerOrNull(type)
             }
         }
 
