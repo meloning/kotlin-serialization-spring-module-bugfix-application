@@ -17,8 +17,8 @@ class UserController(
 ) {
 
     @GetMapping("/users")
-    fun getUsers(@PageableDefault(page = 0, size = 5) pageable: Pageable): Page<UserDto> {
+    fun getUsers(@PageableDefault(page = 0, size = 5) pageable: Pageable): ResponseEntity<Page<UserDto>> {
         val result = userService.getUsers(pageable)
-        return result
+        return ResponseEntity.ok(result)
     }
 }
