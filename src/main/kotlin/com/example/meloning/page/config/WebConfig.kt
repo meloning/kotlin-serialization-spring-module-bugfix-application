@@ -1,8 +1,11 @@
 package com.example.meloning.page.config
 
+import com.example.meloning.page.util.PageSerializer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.descriptors.PolymorphicKind.OPEN
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.json.Json
@@ -10,6 +13,7 @@ import kotlinx.serialization.serializerOrNull
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.GenericTypeResolver
 import org.springframework.core.ResolvableType
+import org.springframework.data.domain.Page
 import org.springframework.http.HttpInputMessage
 import org.springframework.http.HttpOutputMessage
 import org.springframework.http.MediaType
@@ -24,6 +28,7 @@ import org.springframework.util.StreamUtils
 import org.springframework.web.servlet.config.annotation.EnableWebMvc
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import java.io.IOException
+import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
@@ -35,10 +40,11 @@ class WebConfig : WebMvcConfigurer {
 
     override fun configureMessageConverters(converters: MutableList<HttpMessageConverter<*>>) {
         converters.addAll(listOf(CustomKotlinSerializationJsonHttpMessageConverter(), MappingJackson2HttpMessageConverter()))
+//        converters.addAll(listOf(KotlinSerializationJsonHttpMessageConverter(), MappingJackson2HttpMessageConverter()))
         println(converters)
     }
 
-    abstract class CustomAbstractKotlinSerializationHttpMessageConverter<T : SerialFormat?>(
+    abstract class CustomAbstractKotlinSerializationHttpMessageConverter<T : SerialFormat>(
         private var format: T, vararg supportedMediaTypes: MediaType
     ) : AbstractGenericHttpMessageConverter<Any>(*supportedMediaTypes) {
 
@@ -85,7 +91,7 @@ class WebConfig : WebMvcConfigurer {
 
         @Throws(IOException::class, HttpMessageNotWritableException::class)
         override fun writeInternal(`object`: Any, type: Type?, outputMessage: HttpOutputMessage) {
-            val resolvedType = type?.let { checkAndGetGenericType(it) } ?: `object`.javaClass
+            val resolvedType = type?.let { ResolvableType.forType(it).type } ?: `object`.javaClass
             val serializer = serializer(resolvedType)
                     ?: throw HttpMessageNotWritableException("Could not find KSerializer for $resolvedType")
             writeInternal(`object`, serializer, format, outputMessage)
@@ -111,7 +117,19 @@ class WebConfig : WebMvcConfigurer {
             var serializer = serializerCache[type]
             if (serializer == null) {
                 try {
-                    serializer = serializerOrNull(type)
+                    serializer = if (type is ParameterizedType) {
+                        val rootClass = (type.rawType as Class<*>)
+                        val args = (type.actualTypeArguments)
+                        val argsSerializers = args.map { serializerOrNull(it) }
+                        if (argsSerializers.isEmpty() && argsSerializers.first() == null) null
+                        when {
+                            Page::class.java.isAssignableFrom(rootClass) ->
+                                PageSerializer(ListSerializer(argsSerializers.first()!!.nullable)) as KSerializer<Any>?
+                            else -> null
+                        }
+                    } else {
+                        serializerOrNull(type)
+                    }
                 } catch (ignored: IllegalArgumentException) {
                 }
                 if (serializer != null) {
