@@ -176,6 +176,7 @@ class WebConfig : WebMvcConfigurer {
             }
         }
 
+        @Suppress("UNCHECKED_CAST")
         @OptIn(ExperimentalSerializationApi::class)
         override fun serializerInternal(type: Type): KSerializer<Any>? {
             return when(type) {
@@ -183,7 +184,7 @@ class WebConfig : WebMvcConfigurer {
                     val rootClass = (type.rawType as Class<*>)
                     val args = (type.actualTypeArguments)
                     val argsSerializers = args.map { serializerOrNull(it) }
-                    if (argsSerializers.isEmpty() && argsSerializers.first() == null) null
+                    if (argsSerializers.isEmpty() && argsSerializers.first() == null) return null
                     DomainSerializerFactory.create(rootClass, argsSerializers)
                 }
                 else -> serializerOrNull(type)
